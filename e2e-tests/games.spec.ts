@@ -86,6 +86,21 @@ test.describe('Game Listing and Navigation', () => {
     });
   });
 
+  test('should filter games by category and publisher together', async ({ page }) => {
+    await test.step('Navigate to home page and filter by strategy games from CodeForge Studios', async () => {
+      await page.goto('/');
+      await page.getByLabel('Strategy').check();
+      await page.getByTestId('publisher-filter').selectOption({ label: 'CodeForge Studios' });
+    });
+
+    await test.step('Verify only matching games remain visible', async () => {
+      const visibleCards = page.locator('[data-testid="game-card-container"]:visible');
+      await expect(visibleCards).toHaveCount(1);
+      await expect(page.locator('[data-testid="game-card-container"]:visible [data-testid="game-title"]').first()).toContainText('DevOps Dominion');
+      await expect(page.getByText('No games match the selected filters.')).toBeHidden();
+    });
+  });
+
   test('should display a button to back the game', async ({ page }) => {
     await test.step('Navigate to game details page', async () => {
       await page.goto('/game/1');
