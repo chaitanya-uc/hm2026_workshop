@@ -220,4 +220,40 @@ test.describe('Accessibility Tests', () => {
       await expect(gameCardSvgs.nth(i)).toHaveAttribute('aria-hidden', 'true');
     }
   });
+
+  test('high contrast mode should persist across page reloads', async ({ page }) => {
+    await page.goto('/');
+
+    const contrastToggle = page.getByRole('button', { name: /enable high contrast mode/i });
+    await expect(contrastToggle).toHaveAttribute('aria-pressed', 'false');
+
+    await test.step('Enable high contrast mode', async () => {
+      await contrastToggle.click();
+      await expect(page.locator('html')).toHaveClass(/high-contrast/);
+      await expect(page.getByRole('button', { name: /disable high contrast mode/i })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    await test.step('Reload and verify the preference remains enabled', async () => {
+      await page.reload();
+      await expect(page.locator('html')).toHaveClass(/high-contrast/);
+      await expect(page.getByRole('button', { name: /disable high contrast mode/i })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    await test.step('Disable high contrast mode', async () => {
+      await page.getByRole('button', { name: /disable high contrast mode/i }).click();
+      await expect(page.locator('html')).not.toHaveClass(/high-contrast/);
+      await expect(page.getByRole('button', { name: /enable high contrast mode/i })).toHaveAttribute('aria-pressed', 'false');
+    });
+  });
+
+  test('high contrast mode should remain free of accessibility violations', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /enable high contrast mode/i }).click();
+
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+
+    expect(accessibilityScanResults.violations).toEqual([]);
+  });
 });
